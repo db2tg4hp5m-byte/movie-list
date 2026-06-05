@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 我的电影清单 · 183部影史经典</title>
+<style>
+  :root {
+    --bg:#0f0f0f; --card:#1a1a1a; --border:#2a2a2a; --text:#ccc;
+    --text-dim:#777; --accent:#f5c518; --green:#2ecc71; --red:#e74c3c;
+    --blue:#3498db; --douban:#4a9c3f; --imdb:#f3ce13;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  .header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(15,15,15,0.95);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);padding:16px 24px;
+  }
+  .header h1{font-size:1.5rem;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .header h1 span{font-size:0.85rem;color:var(--text-dim);font-weight:400}
+
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 14px;display:flex;align-items:center;gap:6px;font-size:0.85rem}
+  .stat .num{font-size:1.2rem;font-weight:700;color:#fff}
+  .num.green{color:var(--green)} .num.gray{color:var(--text-dim)} .num.gold{color:var(--accent)}
+
+  .progress-wrap{margin-top:10px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+  .progress-bar{height:100%;background:var(--green);border-radius:2px;transition:width .4s ease}
+
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .toolbar input[type=text]{flex:1;min-width:180px;max-width:360px;background:var(--card);border:1px solid var(--border);color:#fff;padding:8px 12px;border-radius:6px;font-size:0.85rem;outline:none;transition:border-color .2s}
+  .toolbar input[type=text]:focus{border-color:var(--accent)}
+
+  .btn-group{display:flex;gap:0;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+  .btn-group button{background:var(--card);color:var(--text);border:none;padding:8px 14px;font-size:0.82rem;cursor:pointer;transition:all .2s}
+  .btn-group button+button{border-left:1px solid var(--border)}
+  .btn-group button:hover{background:#2a2a2a}
+  .btn-group button.active{background:var(--accent);color:#000;font-weight:600}
+
+  .btn-accent{background:var(--accent);color:#000;border:none;padding:8px 14px;border-radius:6px;font-size:0.82rem;cursor:pointer;font-weight:600;transition:opacity .2s}
+  .btn-accent:hover{opacity:.85}
+  .btn-blue{background:var(--blue);color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:0.82rem;cursor:pointer;transition:opacity .2s}
+  .btn-blue:hover{opacity:.85}
+
+  .movie-list{padding:20px 24px;columns:3;column-gap:18px}
+  @media(max-width:1300px){.movie-list{columns:2}}
+  @media(max-width:800px){.movie-list{columns:1}}
+
+  .movie-card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:13px 15px;margin-bottom:10px;break-inside:avoid;
+    transition:border-color .2s,transform .15s;position:relative;
+    display:flex;align-items:flex-start;gap:10px;
+  }
+  .movie-card:hover{border-color:#444;transform:translateY(-1px)}
+  .movie-card.watched{border-color:#1f3a1f;background:#0e180e}
+  .movie-card.watched .watch-badge{
+    position:absolute;top:10px;right:12px;
+    color:var(--green);font-weight:700;font-size:0.8rem;
+    background:#0a1f0a;padding:2px 8px;border-radius:10px;
+  }
+  .movie-num{color:var(--text-dim);font-size:0.72rem;min-width:22px;text-align:center;padding-top:1px;flex-shrink:0}
+  .movie-body{flex:1;min-width:0}
+  .movie-title{font-size:0.92rem;color:#fff;font-weight:500;margin-bottom:4px;line-height:1.3}
+  .movie-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .movie-director{font-size:0.73rem;color:var(--text-dim)}
+  .movie-year{font-size:0.72rem;color:#888;background:#1a1a1a;padding:1px 6px;border-radius:3px}
+  .rating-badge{font-size:0.7rem;padding:1px 7px;border-radius:3px;font-weight:600;display:inline-flex;align-items:center;gap:3px}
+  .rating-badge.imdb{background:#1a1a0a;color:var(--imdb)}
+  .rating-badge.douban{background:#0a1a0a;color:var(--douban)}
+
+  .movie-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .movie-controls label{display:flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--text-dim);cursor:pointer;user-select:none}
+  .movie-controls input[type=checkbox]{accent-color:var(--green);width:14px;height:14px;cursor:pointer}
+  .user-rating{background:var(--bg);color:#fff;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:0.75rem;cursor:pointer;outline:none}
+  .user-rating:focus{border-color:var(--accent)}
+  .comment-input{width:100%;margin-top:7px;background:var(--bg);color:#ccc;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:0.75rem;outline:none;transition:border-color .2s;display:none}
+  .movie-card.watched .comment-input{display:block}
+  .comment-input:focus{border-color:var(--accent)}
+  .comment-input::placeholder{color:#555}
+
+  .empty-msg{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:1rem}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);
+    z-index:200;display:flex;align-items:center;justify-content:center;
+    animation:fadeIn .2s;
+  }
+  @keyframes fadeIn{from{opacity:0}}
+  .modal{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:28px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;
+  }
+  .modal h2{font-size:1.2rem;color:#fff;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .modal label{display:block;font-size:0.82rem;color:var(--text-dim);margin-bottom:4px;margin-top:14px}
+  .modal label:first-of-type{margin-top:0}
+  .modal input{width:100%;background:var(--bg);color:#fff;border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.9rem;outline:none}
+  .modal input:focus{border-color:var(--accent)}
+  .modal .row{display:flex;gap:12px}
+  .modal .row>div{flex:1}
+  .modal .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  .modal .btn-cancel{background:#333;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.85rem}
+  .modal .btn-save{background:var(--accent);color:#000;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem}
+
+  .rec-section{padding:0 24px;margin-top:0}
+  .rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:16px 0}
+  .rec-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color .2s,transform .15s;cursor:default}
+  .rec-card:hover{border-color:#555;transform:translateY(-2px)}
+  .rec-card .rec-title{font-size:1rem;color:#fff;font-weight:600;margin-bottom:6px}
+  .rec-card .rec-meta{font-size:0.78rem;color:var(--text-dim);margin-bottom:4px}
+  .rec-card .rec-reason{font-size:0.75rem;color:var(--accent);margin-top:8px;font-style:italic}
+  .rec-card .rec-badges{display:flex;gap:8px;margin-top:6px}
+
+  .rec-header{display:flex;align-items:center;gap:16px;padding:16px 0 0}
+  .rec-header h3{color:#fff;font-size:1.1rem}
+  .rec-header .btn-sm{font-size:0.75rem;padding:5px 12px}
+
+  .footer{text-align:center;padding:30px 20px;color:var(--text-dim);font-size:0.78rem;border-top:1px solid var(--border);margin-top:20px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎬 我的电影清单 <span>· 影史经典</span></h1>
+  <div class="stats">
+    <div class="stat">📽️ 总计 <span class="num" id="stat-total">183</span></div>
+    <div class="stat">✅ 已看 <span class="num green" id="stat-watched">0</span></div>
+    <div class="stat">📋 未看 <span class="num gray" id="stat-unwatched">183</span></div>
+    <div class="stat">⭐ 均分 <span class="num gold" id="stat-avg">-</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="🔍 搜索电影 / 导演...">
+    <div class="btn-group" id="filter-btns">
+      <button data-filter="all" class="active">全部</button>
+      <button data-filter="watched">✅ 已看</button>
+      <button data-filter="unwatched">📋 未看</button>
+    </div>
+    <button class="btn-accent" onclick="openAddModal()">➕ 添加电影</button>
+    <button class="btn-blue" onclick="generateRecs()">🎲 推荐 10 部</button>
+    <button class="btn-blue" style="background:#555" onclick="exportData()">📥 导出</button>
+  </div>
+</div>
+
+<div id="rec-container"></div>
+<div class="movie-list" id="movie-list"></div>
+<div class="footer">数据自动保存在浏览器本地 · 关闭页面不会丢失 · 评分数据截至 2026 年</div>
+
+<!-- Add Movie Modal -->
+<div class="modal-overlay" id="add-modal" style="display:none" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal">
+    <h2>🎞️ 添加电影</h2>
+    <label>电影名称 *</label>
+    <input type="text" id="add-title" placeholder="输入电影名称...">
+    <div class="row">
+      <div><label>导演</label><input type="text" id="add-director" placeholder="选填"></div>
+      <div><label>年份</label><input type="text" id="add-year" placeholder="如 2024"></div>
+    </div>
+    <div class="row">
+      <div><label>豆瓣评分</label><input type="text" id="add-douban" placeholder="如 8.5"></div>
+      <div><label>IMDb 评分</label><input type="text" id="add-imdb" placeholder="如 7.8"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeAddModal()">取消</button>
+      <button class="btn-save" onclick="addMovie()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MOVIE DATABASE — director, year, IMDb, Douban (ratings as of 2026)
+// ============================================================
+const MOVIE_DB = {
+  "造梦之家":{d:"史蒂文·斯皮尔伯格",y:2022,im:7.5,db:7.8},
+  "八部半":{d:"费德里科·费里尼",y:1963,im:8.0,db:8.5},
+  "迷魂记":{d:"阿尔弗雷德·希区柯克",y:1958,im:8.3,db:8.7},
+  "大独裁者":{d:"查理·卓别林",y:1940,im:8.4,db:9.0},
+  "圣女贞德蒙难记":{d:"卡尔·西奥多·德莱叶",y:1928,im:8.1,db:8.7},
+  "七武士":{d:"黑泽明",y:1954,im:8.6,db:9.3},
+  "四百击":{d:"弗朗索瓦·特吕弗",y:1959,im:8.1,db:8.9},
+  "愤怒的公牛":{d:"马丁·斯科塞斯",y:1980,im:8.1,db:8.4},
+  "公民凯恩":{d:"奥逊·威尔斯",y:1941,im:8.3,db:8.8},
+  "东京物语":{d:"小津安二郎",y:1953,im:8.2,db:9.3},
+  "惊魂记":{d:"阿尔弗雷德·希区柯克",y:1960,im:8.5,db:9.1},
+  "橡皮头":{d:"大卫·林奇",y:1977,im:7.3,db:7.9},
+  "将军号":{d:"巴斯特·基顿",y:1926,im:8.1,db:9.1},
+  "切腹":{d:"小林正树",y:1962,im:8.5,db:9.3},
+  "关山飞渡":{d:"约翰·福特",y:1939,im:7.8,db:8.3},
+  "小城之春":{d:"费穆",y:1948,im:7.7,db:8.8},
+  "偷自行车的人":{d:"维托里奥·德·西卡",y:1948,im:8.3,db:9.1},
+  "扒手":{d:"罗伯特·布列松",y:1959,im:7.6,db:8.4},
+  "阿尔及尔之战":{d:"吉洛·彭特克沃",y:1966,im:8.1,db:8.6},
+  "战舰波将金号":{d:"谢尔盖·爱森斯坦",y:1925,im:7.9,db:8.7},
+  "持摄影机的人":{d:"吉加·维尔托夫",y:1929,im:8.3,db:9.1},
+  "安德烈·卢布廖夫":{d:"安德烈·塔可夫斯基",y:1966,im:8.1,db:9.1},
+  "罗生门":{d:"黑泽明",y:1950,im:8.2,db:8.9},
+  "雁南飞":{d:"米哈伊尔·卡拉托佐夫",y:1957,im:8.0,db:8.8},
+  "假面":{d:"英格玛·伯格曼",y:1966,im:8.1,db:8.8},
+  "伊万的童年":{d:"安德烈·塔可夫斯基",y:1962,im:8.1,db:8.8},
+  "精疲力尽":{d:"让-吕克·戈达尔",y:1960,im:7.7,db:8.5},
+  "山椒大夫":{d:"沟口健二",y:1954,im:8.0,db:8.6},
+  "游戏规则":{d:"让·雷诺阿",y:1939,im:7.9,db:8.6},
+  "日出":{d:"F·W·茂瑙",y:1927,im:8.1,db:8.8},
+  "随心所欲":{d:"让-吕克·戈达尔",y:1962,im:7.8,db:8.5},
+  "日落大道":{d:"比利·怀尔德",y:1950,im:8.4,db:8.9},
+  "夜":{d:"米开朗基罗·安东尼奥尼",y:1961,im:7.9,db:8.5},
+  "控方证人":{d:"比利·怀尔德",y:1957,im:8.4,db:9.6},
+  "热情如火":{d:"比利·怀尔德",y:1959,im:8.2,db:8.9},
+  "罗马，不设防的城市":{d:"罗伯托·罗西里尼",y:1945,im:7.9,db:8.3},
+  "奇遇":{d:"米开朗基罗·安东尼奥尼",y:1960,im:7.8,db:8.2},
+  "大路":{d:"费德里科·费里尼",y:1954,im:8.0,db:8.8},
+  "第七封印":{d:"英格玛·伯格曼",y:1957,im:8.1,db:8.7},
+  "第三人":{d:"卡罗尔·里德",y:1949,im:8.1,db:8.6},
+  "用心棒":{d:"黑泽明",y:1961,im:8.2,db:9.1},
+  "晚春":{d:"小津安二郎",y:1949,im:8.0,db:9.1},
+  "大都会":{d:"弗里茨·朗",y:1927,im:8.3,db:9.1},
+  "卡萨布兰卡":{d:"迈克尔·柯蒂兹",y:1942,im:8.5,db:8.8},
+  "亚特兰大号":{d:"让·维果",y:1934,im:7.8,db:8.4},
+  "M就是杀手":{d:"弗里茨·朗",y:1931,im:8.3,db:8.8},
+  "驴子巴特萨":{d:"罗伯特·布列松",y:1966,im:7.8,db:8.3},
+  "祖与占":{d:"弗朗索瓦·特吕弗",y:1962,im:7.7,db:8.6},
+  "大地之歌":{d:"萨蒂亚吉特·雷伊",y:1955,im:8.2,db:8.9},
+  "五至七时的克莱奥":{d:"阿涅斯·瓦尔达",y:1962,im:7.8,db:8.6},
+  "雨月物语":{d:"沟口健二",y:1953,im:8.1,db:8.7},
+  "历劫佳人":{d:"奥逊·威尔斯",y:1958,im:8.0,db:8.5},
+  "野草莓":{d:"英格玛·伯格曼",y:1957,im:8.1,db:8.9},
+  "城市之光":{d:"查理·卓别林",y:1931,im:8.5,db:9.3},
+  "词语":{d:"卡尔·西奥多·德莱叶",y:1955,im:8.1,db:8.7},
+  "浮云":{d:"成濑巳喜男",y:1955,im:7.9,db:8.7},
+  "马太福音":{d:"皮埃尔·保罗·帕索里尼",y:1964,im:7.6,db:8.1},
+  "死囚越狱":{d:"罗伯特·布列松",y:1956,im:8.2,db:8.8},
+  "一一":{d:"杨德昌",y:2000,im:7.9,db:9.1},
+  "出租车司机":{d:"马丁·斯科塞斯",y:1976,im:8.2,db:8.6},
+  "现代启示录":{d:"弗朗西斯·科波拉",y:1979,im:8.5,db:8.7},
+  "西北偏北":{d:"阿尔弗雷德·希区柯克",y:1959,im:8.3,db:8.7},
+  "雨中曲":{d:"斯坦利·多南",y:1952,im:8.3,db:9.1},
+  "侠女":{d:"胡金铨",y:1971,im:7.5,db:8.6},
+  "花样年华":{d:"王家卫",y:2000,im:8.1,db:8.8},
+  "银翼杀手":{d:"雷德利·斯科特",y:1982,im:8.1,db:8.6},
+  "镜子":{d:"安德烈·塔可夫斯基",y:1975,im:8.0,db:9.0},
+  "教父":{d:"弗朗西斯·科波拉",y:1972,im:9.2,db:9.3},
+  "低俗小说":{d:"昆汀·塔伦蒂诺",y:1994,im:8.9,db:8.9},
+  "发条橙":{d:"斯坦利·库布里克",y:1971,im:8.3,db:8.6},
+  "德州巴黎":{d:"维姆·文德斯",y:1984,im:8.1,db:8.8},
+  "穆赫兰道":{d:"大卫·林奇",y:2001,im:7.9,db:8.7},
+  "巴里·林登":{d:"斯坦利·库布里克",y:1975,im:8.1,db:8.8},
+  "特写":{d:"阿巴斯·基亚罗斯塔米",y:1990,im:8.1,db:9.0},
+  "E.T.外星人":{d:"史蒂文·斯皮尔伯格",y:1982,im:7.9,db:8.6},
+  "石榴的颜色":{d:"谢尔盖·帕拉杰诺夫",y:1969,im:7.6,db:8.5},
+  "蔑视":{d:"让-吕克·戈达尔",y:1963,im:7.4,db:7.9},
+  "牯岭街少年杀人事件":{d:"杨德昌",y:1991,im:8.1,db:9.0},
+  "放大":{d:"米开朗基罗·安东尼奥尼",y:1966,im:7.5,db:8.3},
+  "让娜·迪尔曼":{d:"香特尔·阿克曼",y:1975,im:7.7,db:8.5},
+  "豹":{d:"卢基诺·维斯康蒂",y:1963,im:8.0,db:8.8},
+  "搜索者":{d:"约翰·福特",y:1956,im:7.8,db:8.1},
+  "潜行者":{d:"安德烈·塔可夫斯基",y:1979,im:8.1,db:8.9},
+  "重庆森林":{d:"王家卫",y:1994,im:8.0,db:8.8},
+  "蓝丝绒":{d:"大卫·林奇",y:1986,im:7.7,db:7.8},
+  "军中禁恋":{d:"克莱尔·德尼",y:1999,im:7.1,db:7.6},
+  "血色将至":{d:"保罗·托马斯·安德森",y:2007,im:8.2,db:8.5},
+  "悲情城市":{d:"侯孝贤",y:1989,im:7.8,db:9.0},
+  "永恒和一日":{d:"西奥·安哲罗普洛斯",y:1998,im:7.9,db:9.0},
+  "乱":{d:"黑泽明",y:1985,im:8.2,db:8.9},
+  "赤胆威龙":{d:"霍华德·霍克斯",y:1959,im:7.9,db:8.1},
+  "西部往事":{d:"赛尔乔·莱昂内",y:1968,im:8.5,db:9.0},
+  "美国往事":{d:"赛尔乔·莱昂内",y:1984,im:8.3,db:9.1},
+  "安妮·霍尔":{d:"伍迪·艾伦",y:1977,im:8.0,db:8.6},
+  "狂人皮埃罗":{d:"让-吕克·戈达尔",y:1965,im:7.5,db:8.4},
+  "玩乐时间":{d:"雅克·塔蒂",y:1967,im:7.8,db:8.7},
+  "诺斯费拉图":{d:"F·W·茂瑙",y:1922,im:7.9,db:8.5},
+  "秋刀鱼之味":{d:"小津安二郎",y:1962,im:8.2,db:9.2},
+  "黄金三镖客":{d:"赛尔乔·莱昂内",y:1966,im:8.8,db:9.3},
+  "卧虎藏龙":{d:"李安",y:2000,im:7.9,db:8.7},
+  "疤面煞星":{d:"布莱恩·德·帕尔玛",y:1983,im:8.3,db:7.8},
+  "功夫":{d:"周星驰",y:2004,im:7.7,db:8.9},
+  "天堂电影院":{d:"朱塞佩·托纳多雷",y:1988,im:8.5,db:9.2},
+  "星球大战":{d:"乔治·卢卡斯",y:1977,im:8.6,db:8.5},
+  "德州电锯杀人狂":{d:"托比·霍珀",y:1974,im:7.4,db:7.4},
+  "春光乍泄":{d:"王家卫",y:1997,im:7.7,db:9.0},
+  "不散":{d:"蔡明亮",y:2003,im:7.1,db:7.8},
+  "寄生虫":{d:"奉俊昊",y:2019,im:8.5,db:8.8},
+  "热天午后":{d:"西德尼·吕美特",y:1975,im:8.0,db:8.7},
+  "黑水仙":{d:"迈克尔·鲍威尔",y:1947,im:7.8,db:7.9},
+  "阿基尔，上帝的愤怒":{d:"维尔纳·赫尔佐格",y:1972,im:7.8,db:8.5},
+  "英雄":{d:"张艺谋",y:2002,im:7.9,db:7.8},
+  "大白鲨":{d:"史蒂文·斯皮尔伯格",y:1975,im:8.1,db:7.8},
+  "大开眼戒":{d:"斯坦利·库布里克",y:1999,im:7.5,db:8.1},
+  "魂断威尼斯":{d:"卢基诺·维斯康蒂",y:1971,im:7.4,db:8.3},
+  "楢山节考":{d:"今村昌平",y:1983,im:7.9,db:9.0},
+  "好家伙":{d:"马丁·斯科塞斯",y:1990,im:8.7,db:8.5},
+  "雌雄大盗":{d:"阿瑟·佩恩",y:1967,im:7.7,db:8.3},
+  "月光男孩":{d:"巴里·詹金斯",y:2016,im:7.4,db:7.5},
+  "地下":{d:"埃米尔·库斯图里卡",y:1995,im:8.1,db:9.2},
+  "关于我母亲的一切":{d:"佩德罗·阿莫多瓦",y:1999,im:7.8,db:8.6},
+  "陆上行舟":{d:"维尔纳·赫尔佐格",y:1982,im:8.1,db:8.8},
+  "冰血暴":{d:"乔尔·科恩",y:1996,im:8.1,db:8.3},
+  "逃出绝命镇":{d:"乔丹·皮尔",y:2017,im:7.8,db:7.8},
+  "蓝白红三部曲之蓝":{d:"克日什托夫·基耶斯洛夫斯基",y:1993,im:7.9,db:8.6},
+  "蓝白红三部曲之红":{d:"克日什托夫·基耶斯洛夫斯基",y:1994,im:8.1,db:8.8},
+  "蓝白红三部曲之白":{d:"克日什托夫·基耶斯洛夫斯基",y:1994,im:7.6,db:8.5},
+  "绿光":{d:"埃里克·侯麦",y:1986,im:7.6,db:8.3},
+  "千与千寻":{d:"宫崎骏",y:2001,im:8.6,db:9.4},
+  "盗火线":{d:"迈克尔·曼",y:1995,im:8.3,db:8.5},
+  "两生花":{d:"克日什托夫·基耶斯洛夫斯基",y:1991,im:7.7,db:8.6},
+  "秋菊打官司":{d:"张艺谋",y:1992,im:7.7,db:8.3},
+  "比海更深":{d:"是枝裕和",y:2016,im:7.4,db:8.8},
+  "恐惧吞噬灵魂":{d:"赖纳·维尔纳·法斯宾德",y:1974,im:7.9,db:8.5},
+  "洛奇":{d:"约翰·G·艾维尔森",y:1976,im:8.1,db:8.4},
+  "神圣车行":{d:"莱奥·卡拉克斯",y:2012,im:7.0,db:7.9},
+  "樱桃的滋味":{d:"阿巴斯·基亚罗斯塔米",y:1997,im:7.6,db:8.3},
+  "能召回前世的布米叔叔":{d:"阿彼察邦·韦拉斯哈古",y:2010,im:6.7,db:7.5},
+  "土拨鼠之日":{d:"哈罗德·雷米斯",y:1993,im:8.1,db:8.6},
+  "抛掉书本上街去":{d:"寺山修司",y:1971,im:7.3,db:8.3},
+  "上帝之城":{d:"费尔南多·梅里尔斯",y:2002,im:8.6,db:9.0},
+  "完美日子":{d:"维姆·文德斯",y:2023,im:7.8,db:8.3},
+  "何处是我朋友的家":{d:"阿巴斯·基亚罗斯塔米",y:1987,im:7.8,db:8.8},
+  "肖申克的救赎":{d:"弗兰克·德拉邦特",y:1994,im:9.3,db:9.7},
+  "影武者":{d:"黑泽明",y:1980,im:7.9,db:9.0},
+  "小武":{d:"贾樟柯",y:1998,im:7.3,db:8.4},
+  "沼泽":{d:"卢奎西亚·马特尔",y:2001,im:7.2,db:7.6},
+  "地球之夜":{d:"吉姆·贾木许",y:1991,im:7.7,db:8.4},
+  "不可饶恕":{d:"克林特·伊斯特伍德",y:1992,im:8.2,db:8.5},
+  "钢琴课":{d:"简·坎皮恩",y:1993,im:7.6,db:8.3},
+  "卡斯帕尔·豪泽尔之谜":{d:"维尔纳·赫尔佐格",y:1974,im:7.8,db:8.6},
+  "老无所依":{d:"乔尔·科恩",y:2007,im:8.2,db:8.4},
+  "断背山":{d:"李安",y:2005,im:7.7,db:8.8},
+  "飞越疯人院":{d:"米洛斯·福尔曼",y:1975,im:8.7,db:9.1},
+  "修罗雪姬":{d:"藤田敏八",y:1973,im:7.5,db:8.0},
+  "地狱门":{d:"衣笠贞之助",y:1953,im:7.6,db:7.8},
+  "迷失东京":{d:"索菲亚·科波拉",y:2003,im:7.7,db:7.8},
+  "龙猫":{d:"宫崎骏",y:1988,im:8.1,db:9.2},
+  "牺牲":{d:"安德烈·塔可夫斯基",y:1986,im:7.9,db:8.6},
+  "落水狗":{d:"昆汀·塔伦蒂诺",y:1992,im:8.3,db:8.5},
+  "无人知晓":{d:"是枝裕和",y:2004,im:8.0,db:9.1},
+  "燃烧女子的肖像":{d:"瑟琳·席安玛",y:2019,im:8.1,db:8.8},
+  "着魔":{d:"安德烈·祖拉斯基",y:1981,im:7.3,db:8.0},
+  "新桥恋人":{d:"莱奥·卡拉克斯",y:1991,im:7.5,db:8.3},
+  "随风而逝":{d:"阿巴斯·基亚罗斯塔米",y:1999,im:7.4,db:8.2},
+  "闪灵":{d:"斯坦利·库布里克",y:1980,im:8.4,db:8.3},
+  "沉默的羔羊":{d:"乔纳森·戴米",y:1991,im:8.6,db:8.9},
+  "小丑":{d:"托德·菲利普斯",y:2019,im:8.4,db:8.7},
+  "搏击俱乐部":{d:"大卫·芬奇",y:1999,im:8.8,db:9.0},
+  "阿甘正传":{d:"罗伯特·泽米吉斯",y:1994,im:8.8,db:9.5},
+  "蜂巢幽灵":{d:"维克多·艾里斯",y:1973,im:7.8,db:8.7},
+  "老男孩":{d:"朴赞郁",y:2003,im:8.3,db:8.4},
+  "月球旅行记":{d:"乔治·梅里爱",y:1902,im:8.1,db:9.1},
+  "银翼杀手2049":{d:"丹尼斯·维伦纽瓦",y:2017,im:8.0,db:8.4},
+  "杀人回忆":{d:"奉俊昊",y:2003,im:8.1,db:8.9},
+  "黑客帝国":{d:"沃卓斯基姐妹",y:1999,im:8.7,db:9.1},
+  "自己去看":{d:"埃列姆·克利莫夫",y:1985,im:8.4,db:8.6},
+  "乡愁":{d:"安德烈·塔可夫斯基",y:1983,im:8.0,db:9.0},
+  "终结者2：审判日":{d:"詹姆斯·卡梅隆",y:1991,im:8.6,db:8.8},
+  "楚门的世界":{d:"彼得·威尔",y:1998,im:8.2,db:9.3},
+  "梦":{d:"黑泽明",y:1990,im:7.7,db:8.7},
+  "飞向太空":{d:"安德烈·塔可夫斯基",y:1972,im:7.9,db:8.6},
+  "2001太空漫游":{d:"斯坦利·库布里克",y:1968,im:8.3,db:8.9},
+};
+
+const ORDERED_TITLES = [
+"造梦之家","八部半","迷魂记","大独裁者","圣女贞德蒙难记","七武士","四百击",
+"愤怒的公牛","公民凯恩","东京物语","惊魂记","橡皮头","将军号","切腹","关山飞渡",
+"小城之春","偷自行车的人","扒手","阿尔及尔之战","战舰波将金号","持摄影机的人",
+"安德烈·卢布廖夫","罗生门","雁南飞","假面","伊万的童年","精疲力尽","山椒大夫",
+"游戏规则","日出","随心所欲","日落大道","夜","控方证人","热情如火",
+"罗马，不设防的城市","奇遇","大路","第七封印","第三人","用心棒","晚春","大都会",
+"卡萨布兰卡","亚特兰大号","M就是杀手","驴子巴特萨","祖与占","大地之歌",
+"五至七时的克莱奥","雨月物语","历劫佳人","野草莓","城市之光","词语","浮云",
+"马太福音","死囚越狱","一一","出租车司机","现代启示录","西北偏北","雨中曲",
+"侠女","花样年华","银翼杀手","镜子","教父","低俗小说","发条橙","德州巴黎",
+"穆赫兰道","巴里·林登","特写","E.T.外星人","石榴的颜色","蔑视",
+"牯岭街少年杀人事件","放大","让娜·迪尔曼","豹","搜索者","潜行者","重庆森林",
+"蓝丝绒","军中禁恋","血色将至","悲情城市","永恒和一日","乱","赤胆威龙",
+"西部往事","美国往事","安妮·霍尔","狂人皮埃罗","玩乐时间","诺斯费拉图",
+"秋刀鱼之味","黄金三镖客","卧虎藏龙","疤面煞星","功夫","天堂电影院","星球大战",
+"德州电锯杀人狂","春光乍泄","不散","寄生虫","热天午后","黑水仙",
+"阿基尔，上帝的愤怒","英雄","大白鲨","大开眼戒","魂断威尼斯","楢山节考",
+"好家伙","雌雄大盗","月光男孩","地下","关于我母亲的一切","陆上行舟","冰血暴",
+"逃出绝命镇","蓝白红三部曲之蓝","蓝白红三部曲之红","蓝白红三部曲之白","绿光",
+"千与千寻","盗火线","两生花","秋菊打官司","比海更深","恐惧吞噬灵魂","洛奇",
+"神圣车行","樱桃的滋味","能召回前世的布米叔叔","土拨鼠之日","抛掉书本上街去",
+"上帝之城","完美日子","何处是我朋友的家","肖申克的救赎","影武者","小武","沼泽",
+"地球之夜","不可饶恕","钢琴课","卡斯帕尔·豪泽尔之谜","老无所依","断背山",
+"飞越疯人院","修罗雪姬","地狱门","迷失东京","龙猫","牺牲","落水狗","无人知晓",
+"燃烧女子的肖像","着魔","新桥恋人","随风而逝","闪灵","沉默的羔羊","小丑",
+"搏击俱乐部","阿甘正传","蜂巢幽灵","老男孩","月球旅行记","银翼杀手2049",
+"杀人回忆","黑客帝国","自己去看","乡愁","终结者2：审判日","楚门的世界","梦",
+"飞向太空","2001太空漫游"
+];
+
+const STORAGE_KEY = 'movie-checklist-v2';
+
+function defaultUserData() {
+  return ORDERED_TITLES.map(title => ({title, watched:false, rating:0, comment:''}));
+}
+
+function loadData() {
+  const oldRaw = localStorage.getItem('movie-checklist-data');
+  if (oldRaw && !localStorage.getItem(STORAGE_KEY)) {
+    try {
+      const old = JSON.parse(oldRaw);
+      const migrated = old.map(m => ({title:m.title, watched:!!m.watched, rating:m.rating||0, comment:m.comment||''}));
+      saveData(migrated);
+      localStorage.removeItem('movie-checklist-data');
+    } catch(e) {}
+  }
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return defaultUserData();
+  try {
+    const saved = JSON.parse(raw);
+    const map = new Map(saved.map(m => [m.title, m]));
+    const merged = ORDERED_TITLES.map(title => map.get(title) || {title, watched:false, rating:0, comment:''});
+    saved.forEach(m => { if (!ORDERED_TITLES.includes(m.title)) merged.push(m); });
+    return merged;
+  } catch(e) { return defaultUserData(); }
+}
+
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+let movies = loadData();
+let currentFilter = 'all';
+let searchTerm = '';
+let currentRecs = [];
+
+function getMeta(movie) {
+  if (MOVIE_DB[movie.title]) return MOVIE_DB[movie.title];
+  if (movie.custom) return { d: movie.director||'?', y: movie.year||0, im: movie.imdb||0, db: movie.douban||0 };
+  return null;
+}
+
+function render() {
+  const listEl = document.getElementById('movie-list');
+  const filtered = movies.filter(m => {
+    if (currentFilter==='watched') return m.watched;
+    if (currentFilter==='unwatched') return !m.watched;
+    return true;
+  }).filter(m => {
+    if (!searchTerm) return true;
+    const meta = getMeta(m);
+    const dir = meta ? meta.d : '';
+    return m.title.includes(searchTerm) || dir.includes(searchTerm) || (m.comment&&m.comment.includes(searchTerm));
+  });
+
+  if (filtered.length===0) {
+    listEl.innerHTML = '<div class="empty-msg">🎞️ 没有匹配的电影</div>';
+  } else {
+    listEl.innerHTML = filtered.map(m => {
+      const idx = movies.indexOf(m);
+      const num = (idx >= 0 && idx < ORDERED_TITLES.length) ? idx+1 : '★';
+      const wClass = m.watched?' watched':'';
+      const meta = getMeta(m);
+      const dir = meta ? meta.d : (m.director||'');
+      const yr = meta ? meta.y : (m.year||'');
+      const im = meta ? meta.im : (m.imdb||0);
+      const db = meta ? meta.db : (m.douban||0);
+      const ratingOpts = Array.from({length:11},(_,v)=>`<option value="${v}" ${m.rating===v?'selected':''}>${v===0?'评分':v}</option>`).join('');
+      return `
+        <div class="movie-card${wClass}" data-index="${idx}">
+          <div class="movie-num">#${num}</div>
+          <div class="movie-body">
+            <div class="movie-title">${esc(m.title)}</div>
+            <div class="movie-meta">
+              ${dir?`<span class="movie-director">🎬 ${esc(dir)}</span>`:''}
+              ${yr?`<span class="movie-year">${yr}</span>`:''}
+              ${im?`<span class="rating-badge imdb">IMDb ★${im.toFixed(1)}</span>`:''}
+              ${db?`<span class="rating-badge douban">豆瓣 ★${db.toFixed(1)}</span>`:''}
+            </div>
+            <div class="movie-controls">
+              <label><input type="checkbox" ${m.watched?'checked':''} onchange="toggleWatched(${idx})">已看</label>
+              <select class="user-rating" onchange="setRating(${idx},this.value)" ${m.watched?'':'disabled'}>
+                ${ratingOpts}
+              </select>
+            </div>
+            <input class="comment-input" type="text" placeholder="💬 写句短评..." value="${esc(m.comment||'')}" oninput="setComment(${idx},this.value)">
+            ${m.watched?'<div class="watch-badge">✓</div>':''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+  updateStats();
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+function updateStats() {
+  const total = movies.length;
+  const watched = movies.filter(m=>m.watched).length;
+  const rated = movies.filter(m=>m.watched&&m.rating>0);
+  const avg = rated.length>0 ? (rated.reduce((s,m)=>s+m.rating,0)/rated.length).toFixed(1) : '-';
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-watched').textContent = watched;
+  document.getElementById('stat-unwatched').textContent = total-watched;
+  document.getElementById('stat-avg').textContent = avg;
+  document.getElementById('progress-bar').style.width = total>0?Math.round(watched/total*100)+'%':'0%';
+}
+
+function toggleWatched(i) {
+  movies[i].watched = !movies[i].watched;
+  if (!movies[i].watched) { movies[i].rating=0; movies[i].comment=''; }
+  persistAndRender();
+}
+function setRating(i, v) { movies[i].rating=parseInt(v); persistAndRender(); }
+function setComment(i, v) { movies[i].comment=v; saveData(movies); }
+function persistAndRender() { saveData(movies); render(); }
+
+document.getElementById('search').addEventListener('input', function(e){
+  searchTerm = e.target.value.trim(); render();
+});
+document.getElementById('filter-btns').addEventListener('click', function(e){
+  if (e.target.tagName!=='BUTTON') return;
+  currentFilter = e.target.dataset.filter;
+  this.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  render();
+});
+
+function openAddModal() { document.getElementById('add-modal').style.display='flex'; document.getElementById('add-title').focus(); }
+function closeAddModal() {
+  document.getElementById('add-modal').style.display='none';
+  ['add-title','add-director','add-year','add-douban','add-imdb'].forEach(id=>document.getElementById(id).value='');
+}
+function addMovie() {
+  const title = document.getElementById('add-title').value.trim();
+  if (!title) { alert('请输入电影名称'); return; }
+  if (movies.find(m=>m.title===title)) { alert('该电影已在清单中'); return; }
+  const director = document.getElementById('add-director').value.trim();
+  const year = parseInt(document.getElementById('add-year').value) || 0;
+  const douban = parseFloat(document.getElementById('add-douban').value) || 0;
+  const imdb = parseFloat(document.getElementById('add-imdb').value) || 0;
+  movies.push({
+    title, watched:false, rating:0, comment:'',
+    custom: true, director, year, douban, imdb
+  });
+  persistAndRender();
+  closeAddModal();
+}
+
+function generateRecs() {
+  const watched = movies.filter(m=>m.watched);
+  if (watched.length < 3) {
+    currentRecs = movies.filter(m=>!m.watched).sort((a,b)=>{
+      const ma=getMeta(a), mb=getMeta(b);
+      return ((mb?mb.im+mb.db:0)-(ma?ma.im+ma.db:0));
+    }).slice(0,10);
+    renderRecs('🎲 高分推荐（看更多电影后推荐会更精准）');
+    return;
+  }
+  const rated = watched.filter(m=>m.rating>=7);
+  const favDirectors = new Map();
+  const years = [];
+  rated.forEach(m=>{
+    const meta = getMeta(m);
+    if (meta) {
+      favDirectors.set(meta.d, (favDirectors.get(meta.d)||0)+1);
+      if (meta.y) years.push(meta.y);
+    }
+  });
+  const topDirectors = [...favDirectors.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+  const avgYear = years.length>0 ? years.reduce((s,y)=>s+y,0)/years.length : 1990;
+  const scored = movies.filter(m=>!m.watched).map(m=>{
+    const meta = getMeta(m);
+    let score = 0;
+    const reasons = [];
+    if (meta) {
+      if (topDirectors.includes(meta.d)) { score+=4; reasons.push('你喜欢的导演'); }
+      if (meta.y && Math.abs(meta.y-avgYear)<10) { score+=1; reasons.push('年代契合'); }
+      if (meta.im>=8.0) { score+=2; }
+      if (meta.db>=8.5) { score+=2; }
+    }
+    if (meta && meta.im>=8.3 && meta.db>=8.8) score+=1;
+    return { m, score, reasons };
+  });
+  scored.sort((a,b)=>b.score-a.score);
+  const pool = scored.slice(0, Math.min(40, scored.length));
+  for (let i=pool.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  currentRecs = pool.slice(0,10).map(s=>({...s.m, recReasons:s.reasons, recScore:s.score}));
+  renderRecs('🎲 今日推荐 · 基于你的观影偏好');
+}
+
+function renderRecs(title) {
+  const container = document.getElementById('rec-container');
+  if (currentRecs.length===0) { container.innerHTML=''; return; }
+  container.innerHTML = `
+    <div class="rec-section">
+      <div class="rec-header">
+        <h3>${title}</h3>
+        <button class="btn-accent btn-sm" onclick="generateRecs()">🔄 换一批</button>
+        <button class="btn-blue btn-sm" style="background:#444" onclick="dismissRecs()">✕ 收起</button>
+      </div>
+      <div class="rec-grid">
+        ${currentRecs.map(m=>{
+          const meta = getMeta(m);
+          const dir = meta?meta.d:(m.director||'');
+          const yr = meta?meta.y:(m.year||'');
+          const im = meta?meta.im:(m.imdb||0);
+          const db = meta?meta.db:(m.douban||0);
+          const reasons = m.recReasons||[];
+          const reasonText = reasons.length>0 ? reasons.join(' · ') : (im>=8.5?'高分经典':'值得一看');
+          return `
+            <div class="rec-card">
+              <div class="rec-title">${esc(m.title)}</div>
+              <div class="rec-meta">🎬 ${esc(dir)} · ${yr}</div>
+              <div class="rec-badges">
+                ${im?`<span class="rating-badge imdb">IMDb ★${im.toFixed(1)}</span>`:''}
+                ${db?`<span class="rating-badge douban">豆瓣 ★${db.toFixed(1)}</span>`:''}
+              </div>
+              <div class="rec-reason">💡 ${reasonText}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  container.scrollIntoView({behavior:'smooth'});
+}
+
+function dismissRecs() { currentRecs=[]; document.getElementById('rec-container').innerHTML=''; }
+
+function exportData() {
+  const lines = ['# 🎬 电影清单 (导出)',''];
+  lines.push('| # | 电影名称 | 导演 | 年份 | IMDb | 豆瓣 | 已看 | 评分 | 评价 |');
+  lines.push('|---|----------|------|------|------|------|:----:|:----:|------|');
+  movies.forEach((m,i)=>{
+    const meta = getMeta(m);
+    const d = meta?meta.d:(m.director||'');
+    const y = meta?meta.y:(m.year||'');
+    const im = meta?meta.im:(m.imdb||'');
+    const db = meta?meta.db:(m.douban||'');
+    const idx = (i<ORDERED_TITLES.length)?(i+1):'★';
+    lines.push(`| ${idx} | ${m.title} | ${d||'-'} | ${y||'-'} | ${im||'-'} | ${db||'-'} | ${m.watched?'[x]':'[ ]'} | ${m.rating||'-'}/10 | ${m.comment||''} |`);
+  });
+  lines.push('');
+  lines.push(`- 已看：${movies.filter(m=>m.watched).length} / ${movies.length}`);
+  const blob = new Blob([lines.join('\n')],{type:'text/markdown'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='movie-checklist-export.md'; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
