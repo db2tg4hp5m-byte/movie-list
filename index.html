@@ -153,7 +153,10 @@
   <div class="modal">
     <h2>🎞️ 添加电影</h2>
     <label>电影名称 *</label>
-    <input type="text" id="add-title" placeholder="输入电影名称...">
+    <div style="display:flex;gap:8px">
+      <input type="text" id="add-title" placeholder="输入电影名称..." style="flex:1">
+      <button class="btn-accent" onclick="searchMovie(this)" style="white-space:nowrap">🔍 搜索</button>
+    </div>
     <div class="row">
       <div><label>导演</label><input type="text" id="add-director" placeholder="选填"></div>
       <div><label>年份</label><input type="text" id="add-year" placeholder="如 2024"></div>
@@ -448,7 +451,7 @@ function render() {
   } else {
     listEl.innerHTML = filtered.map(m => {
       const idx = movies.indexOf(m);
-      const num = (idx >= 0 && idx < ORDERED_TITLES.length) ? idx+1 : '★';
+      const num = idx >= 0 ? idx+1 : '★';
       const wClass = m.watched?' watched':'';
       const meta = getMeta(m);
       const dir = meta ? meta.d : (m.director||'');
@@ -521,6 +524,106 @@ function closeAddModal() {
   document.getElementById('add-modal').style.display='none';
   ['add-title','add-director','add-year','add-douban','add-imdb'].forEach(id=>document.getElementById(id).value='');
 }
+const CN_MAP = {
+  "情书":"Love Letter","千与千寻":"Spirited Away","龙猫":"My Neighbor Totoro",
+  "七武士":"Seven Samurai","罗生门":"Rashomon","寄生虫":"Parasite",
+  "花样年华":"In the Mood for Love","重庆森林":"Chungking Express",
+  "春光乍泄":"Happy Together","杀人回忆":"Memories of Murder",
+  "老男孩":"Oldboy","上帝之城":"City of God","地下":"Underground",
+  "飞向太空":"Solaris","乡愁":"Nostalghia","牺牲":"The Sacrifice",
+  "镜子":"The Mirror","潜行者":"Stalker","伊万的童年":"Ivan's Childhood",
+  "牺牲":"The Sacrifice","阿甘正传":"Forrest Gump","教父":"The Godfather",
+  "肖申克的救赎":"The Shawshank Redemption","搏击俱乐部":"Fight Club",
+  "黑客帝国":"The Matrix","低俗小说":"Pulp Fiction",
+  "发条橙":"A Clockwork Orange","闪灵":"The Shining",
+  "2001太空漫游":"2001: A Space Odyssey","飞越疯人院":"One Flew Over the Cuckoo's Nest",
+  "楚门的世界":"The Truman Show","天堂电影院":"Cinema Paradiso",
+  "窃听风暴":"The Lives of Others","美丽人生":"Life Is Beautiful",
+  "星际穿越":"Interstellar","盗梦空间":"Inception",
+};
+
+const DIR_MAP = {
+  "Shunji Iwai":"岩井俊二","Hayao Miyazaki":"宫崎骏","Akira Kurosawa":"黑泽明",
+  "Yasujirô Ozu":"小津安二郎","Kenji Mizoguchi":"沟口健二","Masaki Kobayashi":"小林正树",
+  "Shohei Imamura":"今村昌平","Hirokazu Kore-eda":"是枝裕和","Bong Joon-ho":"奉俊昊",
+  "Park Chan-wook":"朴赞郁","Wong Kar-wai":"王家卫","Edward Yang":"杨德昌",
+  "Hsiao-Hsien Hou":"侯孝贤","Zhang Yimou":"张艺谋","Ang Lee":"李安",
+  "Jia Zhangke":"贾樟柯","King Hu":"胡金铨","Stephen Chow":"周星驰",
+  "Tsai Ming-liang":"蔡明亮","Andrei Tarkovsky":"安德烈·塔可夫斯基",
+  "Ingmar Bergman":"英格玛·伯格曼","Federico Fellini":"费德里科·费里尼",
+  "Michelangelo Antonioni":"米开朗基罗·安东尼奥尼","Jean-Luc Godard":"让-吕克·戈达尔",
+  "François Truffaut":"弗朗索瓦·特吕弗","Robert Bresson":"罗伯特·布列松",
+  "Stanley Kubrick":"斯坦利·库布里克","Alfred Hitchcock":"阿尔弗雷德·希区柯克",
+  "Martin Scorsese":"马丁·斯科塞斯","Francis Ford Coppola":"弗朗西斯·科波拉",
+  "Quentin Tarantino":"昆汀·塔伦蒂诺","David Lynch":"大卫·林奇",
+  "Ridley Scott":"雷德利·斯科特","Christopher Nolan":"克里斯托弗·诺兰",
+  "Sergio Leone":"赛尔乔·莱昂内","Billy Wilder":"比利·怀尔德",
+  "Charlie Chaplin":"查理·卓别林","Steven Spielberg":"史蒂文·斯皮尔伯格",
+  "Fritz Lang":"弗里茨·朗","Luchino Visconti":"卢基诺·维斯康蒂",
+  "Vittorio De Sica":"维托里奥·德·西卡","Roberto Rossellini":"罗伯托·罗西里尼",
+  "Pier Paolo Pasolini":"皮埃尔·保罗·帕索里尼","Abbas Kiarostami":"阿巴斯·基亚罗斯塔米",
+  "Wim Wenders":"维姆·文德斯","Werner Herzog":"维尔纳·赫尔佐格",
+  "Rainer Werner Fassbinder":"赖纳·维尔纳·法斯宾德",
+  "Krzysztof Kieślowski":"克日什托夫·基耶斯洛夫斯基","Emir Kusturica":"埃米尔·库斯图里卡",
+  "Pedro Almodóvar":"佩德罗·阿莫多瓦","Joel Coen":"乔尔·科恩","David Fincher":"大卫·芬奇",
+  "James Cameron":"詹姆斯·卡梅隆","Peter Weir":"彼得·威尔",
+  "Milos Forman":"米洛斯·福尔曼","Frank Darabont":"弗兰克·德拉邦特",
+  "Robert Zemeckis":"罗伯特·泽米吉斯","Jonathan Demme":"乔纳森·戴米",
+  "Satyajit Ray":"萨蒂亚吉特·雷伊","Agnès Varda":"阿涅斯·瓦尔达",
+  "Jean Renoir":"让·雷诺阿","Mikhail Kalatozov":"米哈伊尔·卡拉托佐夫",
+  "Elem Klimov":"埃列姆·克利莫夫","Sergei Parajanov":"谢尔盖·帕拉杰诺夫",
+  "Dziga Vertov":"吉加·维尔托夫","Sergei Eisenstein":"谢尔盖·爱森斯坦",
+  "Jean Vigo":"让·维果","Carl Theodor Dreyer":"卡尔·西奥多·德莱叶",
+  "Orson Welles":"奥逊·威尔斯","John Ford":"约翰·福特","Howard Hawks":"霍华德·霍克斯",
+  "Michael Curtiz":"迈克尔·柯蒂兹","Carol Reed":"卡罗尔·里德",
+  "Jacques Tati":"雅克·塔蒂","Eric Rohmer":"埃里克·侯麦",
+  "Chantal Akerman":"香特尔·阿克曼","Claire Denis":"克莱尔·德尼",
+  "Paul Thomas Anderson":"保罗·托马斯·安德森","Barry Jenkins":"巴里·詹金斯",
+  "Jordan Peele":"乔丹·皮尔","Buster Keaton":"巴斯特·基顿",
+  "Theo Angelopoulos":"西奥·安哲罗普洛斯","Apichatpong Weerasethakul":"阿彼察邦·韦拉斯哈古",
+  "Leos Carax":"莱奥·卡拉克斯","Jim Jarmusch":"吉姆·贾木许",
+  "Clint Eastwood":"克林特·伊斯特伍德","Jane Campion":"简·坎皮恩",
+  "Sidney Lumet":"西德尼·吕美特","Michael Mann":"迈克尔·曼",
+  "Brian De Palma":"布莱恩·德·帕尔玛","Arthur Penn":"阿瑟·佩恩",
+  "Harold Ramis":"哈罗德·雷米斯","Todd Phillips":"托德·菲利普斯",
+  "Denis Villeneuve":"丹尼斯·维伦纽瓦","George Lucas":"乔治·卢卡斯",
+  "Tobe Hooper":"托比·霍珀","Woody Allen":"伍迪·艾伦",
+  "John G. Avildsen":"约翰·G·艾维尔森","Víctor Erice":"维克多·艾里斯",
+  "Andrzej Zulawski":"安德烈·祖拉斯基","Céline Sciamma":"瑟琳·席安玛",
+  "Lucrecia Martel":"卢奎西亚·马特尔","Sofia Coppola":"索菲亚·科波拉",
+  "Stanley Donen":"斯坦利·多南","Lana Wachowski":"拉娜·沃卓斯基",
+  "Lilly Wachowski":"莉莉·沃卓斯基","Michael Powell":"迈克尔·鲍威尔",
+  "Teinosuke Kinugasa":"衣笠贞之助","Toshiya Fujita":"藤田敏八",
+  "Fernando Meirelles":"费尔南多·梅里尔斯","Georges Méliès":"乔治·梅里爱",
+  "Fei Mu":"费穆","Gillo Pontecorvo":"吉洛·彭特克沃",
+  "Shûji Terayama":"寺山修司","Naruse Mikio":"成濑巳喜男",
+};
+
+async function searchMovie(btn) {
+  const rawTitle = document.getElementById('add-title').value.trim();
+  if (!rawTitle) { alert('请先输入电影名称'); return; }
+  btn.textContent = '⏳ 搜索中...'; btn.disabled = true;
+  const searchTitle = CN_MAP[rawTitle] || rawTitle;
+  try {
+    const url = `https://www.omdbapi.com/?t=${encodeURIComponent(searchTitle)}&apikey=8804f0d8`;
+    console.log('搜索:', url);
+    const resp = await fetch(url);
+    const data = await resp.json();
+    console.log('结果:', data);
+    if (data.Response === 'True') {
+      if (data.Director) document.getElementById('add-director').value = DIR_MAP[data.Director] || data.Director;
+      if (data.Year) document.getElementById('add-year').value = data.Year;
+      if (data.imdbRating && data.imdbRating !== 'N/A') document.getElementById('add-imdb').value = data.imdbRating;
+    } else {
+      const hint = (rawTitle !== searchTitle)
+        ? '已尝试英文名 "' + searchTitle + '" 也未找到。'
+        : 'OMDb 不支持中文搜索，请尝试用英文片名（如 "Love Letter" 代替 "情书"）。';
+      alert('未找到 "' + rawTitle + '"\n\n' + hint + '\n\n也可手动填写下方信息后直接保存。');
+    }
+  } catch(e) { alert('搜索失败: ' + e.message); console.error(e); }
+  btn.textContent = '🔍 搜索'; btn.disabled = false;
+}
+
 function addMovie() {
   const title = document.getElementById('add-title').value.trim();
   if (!title) { alert('请输入电影名称'); return; }
